@@ -1,0 +1,27 @@
+astroboa-php-mvc is a lightweight MVC framework based on Astroboa PHP Client and the Smarty Template Engine.
+
+It is aimed to help you quickly create web applications with PHP and astroboa putting a minimal effort:
+
+It follows a REST architecture as favored by Ruby on Rails and it is very lightweight. 
+It could be compared with Ruby's Sinatra DSL where you put all your routes in a single file, in our case in index.php
+
+To use it you should do the following:
+
+1) Download the astroboa-php-mvc package, unzip it and move the astroboa-php-mvc folder to your PHP include path (e.g. /usr/share/php/astroboa-php-mvc if you installed PHP as a package in Ubuntu or Debian.
+2) Go back to BetaCONCEPT github projects and download the astroboa-php-client package . Unzip it and move the astroboa-php-client to your PHP include path (e.g. /usr/share/php/astroboa-php-client).
+3) We should also download the latest Smarty Template Engine (3.x) and move the 'lib' folder that you will find in the extracted package inside your PHP include path renaming it from 'lib' to Smarty (e.g. /usr/share/php/Smarty).
+4) Go to the folder that you installed astroboa-php-mvc and copy sample-astroboa.ini, sample-index.php and sample.htaccess to the root of your project renaming them to astroboa.ini, index.php and .htaccess respectively.
+5) Crete a folder name 'controller' under the root of your project into which you will put your controllers. Copy from astroboa-php-mvc the sample-NewsController.php into your 'controller' folder and rename it to 'NewsController.php'
+6) Install memcached server and the memcached (not memcache) PHP module
+7) You should have access to an astroboa repository from / to which you will read and write content
+
+That's it.
+You are ready to start.
+Open astroboa.ini and do the required configuration reading the comments for each configuration property. 
+You should at least add the the ip address or domain name of your astroboa server.
+Check also the .htaccess file to see if you want to do any further configuration. The first two rewrite rules protect your ini file and your controllers directory. The next three rewrite rules route all urls that do not correspond to real files or real directories to your index.php where your routes will take control.
+ 
+Open the index.php to see how to write your routing rules for your REST style Web app.  
+Open the controller/NewsController.php to understand how to write your controllers.
+
+Stay tuned for more documentation and an istallation script that will do all the work for you as well as building a template web app.   
