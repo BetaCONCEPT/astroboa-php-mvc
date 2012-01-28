@@ -18,13 +18,14 @@
  * along with Astroboa.  If not, see <http://www.gnu.org/licenses/>.
  * 
  * * @author Gregory Chomatas (gchomatas@betaconcept.com)
- * 
+ * * @author Savvas Triantafyllou (striantafyllou@betaconcept.com)
  */
 
 require_once('astroboa-php-client/AstroboaClient.php');
 require_once('Smarty' . DIRECTORY_SEPARATOR . 'Smarty.class.php');
 require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'mail' . DIRECTORY_SEPARATOR . 'class.phpmailer.php');
 require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'social' . DIRECTORY_SEPARATOR . 'facebook.php');
+require_once('php-amqplib/amqp.inc');
 
 class Util {
 	
@@ -802,5 +803,34 @@ class Util {
     	$start  = $length * -1; //negative
     	return (substr($string, $start) === $suffix);
     }
+    
+  	/**
+  	 * 
+  	 * Return a connection to a Messaging Queue Server or
+  	 * null if the use of the Messaging  Server has been disabled
+  	 * 
+  	 * Keep in mind that it is the caller's responsibility to 
+  	 * close the connection.
+  	 * 
+  	 * @param unknown_type $astroboaConfiguration
+  	 */  
+    public static function getConnectionToMessageServer($astroboaConfiguration){
+    	
+    	if ($astroboaConfiguration['messaging-server']['MESSAGING_SERVER_ENABLE'] == 'true'){
+	    	return new AMQPConnection(
+	    		$astroboaConfiguration['messaging-server']['MESSAGING_SERVER_HOST'],
+	    		$astroboaConfiguration['messaging-server']['MESSAGING_SERVER_PORT'],
+	    		$astroboaConfiguration['messaging-server']['MESSAGING_SERVER_USERNAME'],
+	    		$astroboaConfiguration['messaging-server']['MESSAGING_SERVER_PASSWORD'],
+	    		$astroboaConfiguration['messaging-server']['MESSAGING_SERVER_VIRTUAL_HOST']
+	    	);
+    	}
+    	
+    	return null;
+    	
+    }
+    
+    
+    
 }
 ?>

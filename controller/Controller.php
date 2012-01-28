@@ -26,6 +26,9 @@ require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATO
 
 class Controller {
 	
+	const VIEWED_OBJECTS_EXCHANGE_NAME = 'ViewedObjects.exchange';
+	const VIEWED_OBJECTS_QUEUE_NAME = 'ViewedObjects';
+	
 	protected $astroboaClient;
 	protected $secureAstroboaClient;
 	protected $smarty;
@@ -72,7 +75,32 @@ class Controller {
 		
 	}
 	
-	protected function getObject($objectIdOrName, $cacheDefaultExpirationInSeconds = null) {
+	/**
+	 * 
+	 * Method responsible to retrieve a resource using the provided system name or id.
+	 * 
+	 * If the cache contains the resource, then that resource is returned.
+	 * Otherwise, the resource is retrieved from the Astroboa repository. 
+	 * If found, it is stored in the cache in order to be available on future requests.
+	 * 
+	 * Users control the amount of time the resource stays in the cache as well as whether
+	 * to keep track that the resource has been viewed. 
+	 * 
+	 * In the latter case, Astroboa PHP MVC is expecting to be able to connect to a messaging server, 
+	 * whose settings are provided in the astroboa.ini and to post a message a specific queue named 
+	 * after the  value of the VIEWED_OBJECTS_QUEUE_NAME variable. The message is nothing more than the
+	 * resource's identifier.
+	 *
+	 * It is not the responsibility of this controller how to process the message that is sent to the queue.
+	 * If the developer activates this feature, she must be able to implement another application whose
+	 * responsibility is to process the messages of this queue.
+	 * 
+	 * @param unknown_type $objectIdOrName Resource identifier or system name
+	 * @param unknown_type $cacheDefaultExpirationInSeconds Number of seconds, the resource is kept in the cache
+	 * @param unknown_type $notifyObjectHasBeenViewed True to keep track that the resource has been viewed, false otherwise.
+	 * @return mixed|NULL
+	 */
+	protected function getObject($objectIdOrName, $cacheDefaultExpirationInSeconds = null, $notifyObjectHasBeenViewed = false) {
 		
 		// first look in cache
 		$object = $this->memoryCache->get($objectIdOrName);
@@ -94,6 +122,11 @@ class Controller {
 				}
 				
 				$this->memoryCache->set($objectIdOrName, $object, $cacheDefaultExpirationInSeconds);
+				
+				if ($object != null && $notifyObjectHasBeenViewed && ! Util::user_agent_is_a_spider()){
+					$this->publishObjectIdToTheViewedObjectsQueue($object['cmsIdentifier']);
+				}
+				
 				return $object;
 			}
 			else if ($request->notFound()){
@@ -105,6 +138,10 @@ class Controller {
 				error_log('An error occured while retreiving object: ' . $objectIdOrName . ' from repository. The error code is: ' . $responseInfo['http_code']);
 				return null;
 			}
+		}
+		
+		if ($object != null && $notifyObjectHasBeenViewed && ! Util::user_agent_is_a_spider()){
+			$this->publishObjectIdToTheViewedObjectsQueue($object['cmsIdentifier']);
 		}
 		
 		return $object;
@@ -261,6 +298,102 @@ class Controller {
 	
 	protected function getResourceApiCommonPath() {
 		return "http://" . $this->astroboaConfiguration['repository']['EXTERNAL_REPOSITORY_ADDRESS'] . "/resource-api/" . $this->astroboaConfiguration['repository']['REPOSITORY_NAME'];
+	}
+	
+	/**
+	 * 
+	 * This method is responsible to publish to an underlying queue
+	 * the provided identifier. 
+	 * 
+	 * A mechanism should be provided on the other end of the queue
+	 * in order to process the contents of this queue. For example, 
+	 * this mechanism may well increase the value of the 
+	 * property 'statistic.viewCounter' of the provided
+	 * object.
+	 *  
+	 * @param $objectId
+	 */
+	protected function publishObjectIdToTheViewedObjectsQueue($objectId){
+
+		error_log('Object ' . $objectId . ' has been viewed');
+		
+		if (empty($objectId)){
+			return ;
+		}
+		
+		$connection = null;
+		$channel = null;
+		
+		try{
+			//Get the connection to the Messaging Server
+			$connection = Util::getConnectionToMessageServer($this->astroboaConfiguration);
+			
+			if ($connection == null){
+				if ($astroboaConfiguration['messaging-server']['MESSAGING_SERVER_ENABLE'] == 'true'){
+					error_log('The use of the messaging server is enabled but no connection to the messaging server is available');
+				}
+				else{
+					//The use of the messaging server is disabled therefore do nothing
+					return;
+				}
+			}
+			
+			//Create a channel			
+			$channel = $connection->channel();
+			
+			/*
+				name: $queue
+				passive: false // we want to declare the queue, not just obtain information about it
+				durable: true // the queue will survive server restarts
+				exclusive: false // the queue can be accessed in other channels
+				auto_delete: false //the queue won't be deleted once the channel is closed.
+			*/
+			$channel->queue_declare(self::VIEWED_OBJECTS_QUEUE_NAME, false, true, false, false);
+				
+			
+			/*
+			    name: VIEW_COUNTER_EXCHANGE_NAME
+			    type: direct
+			    passive: false // we want to declare the exchange, not just obtain information about it
+			    durable: true // the exchange will survive server restarts
+			    auto_delete: false //the exchange won't be deleted once the channel is closed.
+			*/
+			$channel->exchange_declare(self::VIEWED_OBJECTS_EXCHANGE_NAME, 'direct', false, true, false);
+
+			$channel->queue_bind(self::VIEWED_OBJECTS_QUEUE_NAME, self::VIEWED_OBJECTS_EXCHANGE_NAME);
+			
+			$msg = new AMQPMessage($objectId, array('content_type' => 'text/plain', 'delivery-mode' => 2));
+			
+			$channel->basic_publish($msg, self::VIEWED_OBJECTS_EXCHANGE_NAME);
+			
+			$channel->close();
+
+			$connection->close();
+			
+			error_log('Succesfully published resource ' . $objectId);
+			
+		}
+		catch(Exception $e){
+			error_log('Unable to inform queue "' .self::VIEWED_OBJECTS_QUEUE_NAME . '" that the object with id ' . $objectId . ' has been viewed' . $e);
+			
+			if ($channel != null){
+				$channel->close();
+			}
+			
+			if ($connection != null){
+				$connection->close();
+			}
+			
+			return ;
+		}
+	}
+	
+	/**
+	 * Return the URL of the server hosting the application.
+	 * This URL is the external repository address defined in the configuration 
+	 */
+	protected function getServerURL(){
+		return "http://" . $this->astroboaConfiguration['repository']['EXTERNAL_REPOSITORY_ADDRESS'];
 	}
 }
 
