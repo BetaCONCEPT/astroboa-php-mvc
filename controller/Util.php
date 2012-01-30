@@ -816,7 +816,7 @@ class Util {
   	 */  
     public static function getConnectionToMessageServer($astroboaConfiguration){
     	
-    	if ($astroboaConfiguration['messaging-server']['MESSAGING_SERVER_ENABLE'] == 'true'){
+    	if ($astroboaConfiguration['messaging-server']['MESSAGING_SERVER_ENABLE'] == '1'){
 	    	return new AMQPConnection(
 	    		$astroboaConfiguration['messaging-server']['MESSAGING_SERVER_HOST'],
 	    		$astroboaConfiguration['messaging-server']['MESSAGING_SERVER_PORT'],
