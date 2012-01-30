@@ -329,7 +329,7 @@ class Controller {
 			$connection = Util::getConnectionToMessageServer($this->astroboaConfiguration);
 			
 			if ($connection == null){
-				if ($astroboaConfiguration['messaging-server']['MESSAGING_SERVER_ENABLE'] == 'true'){
+				if ($this->astroboaConfiguration['messaging-server']['MESSAGING_SERVER_ENABLE'] == '1'){ //1 stnds for true or on as well
 					error_log('The use of the messaging server is enabled but no connection to the messaging server is available');
 				}
 				else{
