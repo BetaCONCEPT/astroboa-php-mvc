@@ -151,7 +151,7 @@ class BlogpostingsController extends Controller {
 		}
 		else {
 			$responseInfo = $response->getResponseInfo();
-			error_log('An error response returned from query ' . $query . 'The error code is: ' . $responseInfo['http_code'] . '. A Null parent section will be returned' . $this->getResourceApiCommonPath());
+			error_log('An error response returned from query ' . $query . 'The error code is: ' . $responseInfo['http_code'] . '. Astroboa Resource API base path ' . $this->getResourceApiCommonPath());
 		}
 
 		/*
