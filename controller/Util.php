@@ -720,7 +720,7 @@ class Util {
 	 * This method checks if the user is logged in and a valid persistent login cookie is set in her browser.
 	 * It is used in order to prevent session expiration for logged in users that have requested to have persistent loggin sessions (remember me)
 	 */
-	protected function validPersistentLoginHashCodeExistsForLoggedInUser($usernameInCookie, $hashCodeInCookie) {
+	protected static function validPersistentLoginHashCodeExistsForLoggedInUser($usernameInCookie, $hashCodeInCookie) {
 		if (!empty($_SESSION['user']) && !empty($usernameInCookie) && !empty($hashCodeInCookie) && $_SESSION['user']['personAuthentication']['username'] == $usernameInCookie) {
 			$storedHashCodes = $_SESSION['user']['persistentLoginHashCode'];
 			foreach ($storedHashCodes as $storedHashCode) {
