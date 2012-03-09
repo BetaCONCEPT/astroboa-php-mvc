@@ -580,7 +580,7 @@ class Util {
 		foreach ($spiders as $spider) {  
 			$pattern = '/'.$spider.'/i';
 			if (preg_match($pattern, $_SERVER['HTTP_USER_AGENT'])) {  
-				return true;  
+				return TRUE;  
 			}  
 		}
 		return FALSE;
