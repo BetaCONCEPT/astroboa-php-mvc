@@ -100,7 +100,7 @@ class Controller {
 	 * @param unknown_type $notifyObjectHasBeenViewed True to keep track that the resource has been viewed, false otherwise.
 	 * @return mixed|NULL
 	 */
-	protected function getObject($objectIdOrName, $cacheDefaultExpirationInSeconds = null, $notifyObjectHasBeenViewed = false) {
+	protected function getObject($objectIdOrName, $cacheDefaultExpirationInSeconds = null, $notifyObjectHasBeenViewed = FALSE) {
 		
 		// first look in cache
 		$object = $this->memoryCache->get($objectIdOrName);
@@ -123,8 +123,8 @@ class Controller {
 				
 				$this->memoryCache->set($objectIdOrName, $object, $cacheDefaultExpirationInSeconds);
 				
-				if ($object != null && $notifyObjectHasBeenViewed && ! Util::user_agent_is_a_spider()){
-					$this->publishObjectIdToTheViewedObjectsQueue($object['cmsIdentifier']);
+				if ($this->shouldInformThatObjectHasBeenViewed($object,$notifyObjectHasBeenViewed)){
+					$this->objectHasBeenViewed($object['cmsIdentifier']);
 				}
 				
 				return $object;
@@ -140,8 +140,8 @@ class Controller {
 			}
 		}
 		
-		if ($object != null && $notifyObjectHasBeenViewed && ! Util::user_agent_is_a_spider()){
-			$this->publishObjectIdToTheViewedObjectsQueue($object['cmsIdentifier']);
+		if ($this->shouldInformThatObjectHasBeenViewed($object,$notifyObjectHasBeenViewed)){
+			$this->objectHasBeenViewed($object['cmsIdentifier']);
 		}
 		
 		return $object;
@@ -302,25 +302,75 @@ class Controller {
 	
 	/**
 	 * 
-	 * This method is responsible to publish to an underlying queue
-	 * the provided identifier. 
+	 * This method allows developers to perform any kind of action
+	 * which is related to the event of an object read/view. 
 	 * 
-	 * A mechanism should be provided on the other end of the queue
-	 * in order to process the contents of this queue. For example, 
-	 * this mechanism may well increase the value of the 
-	 * property 'statistic.viewCounter' of the provided
-	 * object.
+	 * To do so, a developer may choose one of the following options
+	 * 
+	 * 1. Override this method in her own Controller and thus provide her own
+	 * implementation.
+	 * 
+	 * 2. Use the ability provided by the framework to execute a native script
+	 * which contains the application logic related to the event of an object read/view.
+	 * In order to enable this option the developer 
+	 * 
+	 * 		a. must provide the full path of the script in the configuration file (astroboa.ini) under the key 
+	 * 			[object-view][OBJECT_VIEW_NATIVE_SCRIPT_FULL_PATH]
+	 * 		b. must make sure that the script file resides in the server which hosts the web application
+	 * 		c. must make sure that the script file has the proper rights in order to be executed by the user who runs the PHP process in the server
+	 *      d. must make sure that the script file accepts only one parameter which is the identifier of the object which has been viewed 
+	 * 
+	 * 3. Use the ability provided by the framework to inform a specific queue in a messaging server
+	 * that the object has been viewed.
+	 * In order to enable this option the developer
+	 * 
+	 *      a. must setup a messaging server which implements the AMQP specification. (The server hosting this webapp must have access to the messaging server)
+	 *      b. must enable the use of the messaging server by this web app, by setting the value of the parameter [messaging-server][MESSAGING_SERVER_ENABLE]
+	 *         to TRUE in the configuration file (astroboa.ini)
+	 *      c. must provide all the necessary parameters to allow the framework to connect to the messaging server. These parameters are provided in the
+	 *         section  [messaging-server] of the configuration file (astroboa.ini)
+	 *      d. must create under the virtual host of the messaging server ([messaging-server][MESSAGING_SERVER_VIRTUAL_HOST]) an exchange with the name
+	 *         'ViewedObjects.exchange' (value of the constant VIEWED_OBJECTS_EXCHANGE_NAME) as well as a queue under this exchange with the name
+	 *         'ViewedObjects' (value of the constant VIEWED_OBJECTS_QUEUE_NAME)
+	 *      e. must make sure no value exists in the parameter [object-view][OBJECT_VIEW_NATIVE_SCRIPT_FULL_PATH]
+	 *        
+	 *        
+	 * It should be noted that the above options are mechanisms for capturing the event of an object read/viewed which is raised
+	 * by the framework. All of them provide absolute freedom to the developer on what to do once this event is captured.  
+	 * 
+	 * The developers are also encouraged to have a look at the schema statisticType.xsd which defines the property 'statiticType' 
+	 * which contains the property 'viewCounter' whose value represents the number of the views of the object. 
+	 * For example, they may choose to increase the value of this property every time an object is read/viewed.  
+	 *  
 	 *  
 	 * @param $objectId
 	 */
-	protected function publishObjectIdToTheViewedObjectsQueue($objectId){
+	protected function objectHasBeenViewed($objectId){
 
-		error_log('Object ' . $objectId . ' has been viewed');
-		
 		if (empty($objectId)){
 			return ;
 		}
+
+		error_log('Object ' . $objectId . ' has been viewed');
+		error_log('Executing script ' . $this->astroboaConfiguration['object-view']['OBJECT_VIEW_NATIVE_SCRIPT_FULL_PATH'] . ' ' . $objectId . ' &');
 		
+		if (!empty($this->astroboaConfiguration['object-view']['OBJECT_VIEW_NATIVE_SCRIPT_FULL_PATH'])) {
+			error_log('Executing script ' . $this->astroboaConfiguration['object-view']['OBJECT_VIEW_NATIVE_SCRIPT_FULL_PATH'] . ' ' . $objectId . ' &');
+			exec($this->astroboaConfiguration['object-view']['OBJECT_VIEW_NATIVE_SCRIPT_FULL_PATH'] . ' ' . $objectId . ' &');
+		}
+		else if ($this->astroboaConfiguration['messaging-server']['MESSAGING_SERVER_ENABLE'] == '1'){
+			$this->informQueueThatObjectHasBeenViewed($objectId);
+		}
+		
+	}
+	
+	private function informQueueThatObjectHasBeenViewed($objectId){
+		
+		if (empty($objectId)){
+			error_log('Object identifier is empty. Queue ' . self::VIEWED_OBJECTS_QUEUE_NAME . ' will not be informed ');
+			return ;
+		}
+	
 		$connection = null;
 		$channel = null;
 		
@@ -370,8 +420,7 @@ class Controller {
 
 			$connection->close();
 			
-			error_log('Succesfully published resource ' . $objectId);
-			
+			error_log('Succesfully published resource ' . $objectId . "in : " . ($end - $start) . " secs");
 		}
 		catch(Exception $e){
 			error_log('Unable to inform queue "' .self::VIEWED_OBJECTS_QUEUE_NAME . '" that the object with id ' . $objectId . ' has been viewed' . $e);
@@ -394,6 +443,31 @@ class Controller {
 	 */
 	protected function getServerURL(){
 		return "http://" . $this->astroboaConfiguration['repository']['EXTERNAL_REPOSITORY_ADDRESS'];
+	}
+	
+	
+	
+	private function shouldInformThatObjectHasBeenViewed($object, $notifyObjectHasBeenViewed){
+
+		if ($object == null){
+			//error_log('Queue should not be informed because object is null');
+			return FALSE;
+		}
+		
+		if (Util::user_agent_is_a_spider()){
+			//error_log('Queue should not be informed because user agent is a spider '. $_SERVER['HTTP_USER_AGENT']);
+			return FALSE;
+		}
+		
+		if ($notifyObjectHasBeenViewed == TRUE){
+			//error_log('Queue should be informed because notifyObjectHasBeenViewed is TRUE '. $notifyObjectHasBeenViewed);
+			return TRUE;
+		}
+		
+		//error_log('Queue should not be informed because notifyObjectHasBeenViewed is FALSE #'. $notifyObjectHasBeenViewed . '#');
+		return FALSE;
+		
+		
 	}
 }
 
