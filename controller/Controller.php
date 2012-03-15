@@ -352,13 +352,13 @@ class Controller {
 		}
 
 		error_log('Object ' . $objectId . ' has been viewed');
-		error_log('Executing script ' . $this->astroboaConfiguration['object-view']['OBJECT_VIEW_NATIVE_SCRIPT_FULL_PATH'] . ' ' . $objectId . ' &');
 		
 		if (!empty($this->astroboaConfiguration['object-view']['OBJECT_VIEW_NATIVE_SCRIPT_FULL_PATH'])) {
 			error_log('Executing script ' . $this->astroboaConfiguration['object-view']['OBJECT_VIEW_NATIVE_SCRIPT_FULL_PATH'] . ' ' . $objectId . ' &');
 			exec($this->astroboaConfiguration['object-view']['OBJECT_VIEW_NATIVE_SCRIPT_FULL_PATH'] . ' ' . $objectId . ' &');
 		}
 		else if ($this->astroboaConfiguration['messaging-server']['MESSAGING_SERVER_ENABLE'] == '1'){
+			error_log('Use Messaging Server');
 			$this->informQueueThatObjectHasBeenViewed($objectId);
 		}
 		
@@ -420,7 +420,7 @@ class Controller {
 
 			$connection->close();
 			
-			error_log('Succesfully published resource ' . $objectId . "in : " . ($end - $start) . " secs");
+			error_log('Succesfully published resource ' . $objectId);
 		}
 		catch(Exception $e){
 			error_log('Unable to inform queue "' .self::VIEWED_OBJECTS_QUEUE_NAME . '" that the object with id ' . $objectId . ' has been viewed' . $e);
