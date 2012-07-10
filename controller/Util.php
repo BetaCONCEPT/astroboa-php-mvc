@@ -116,7 +116,7 @@ class Util {
 	public static function getMemoryCache() {
 		$memoryCache = null;
 		
-		if (!empty($GLOBALS['env'] && $GLOBALS['env'] == 'production') {
+		if (!empty($GLOBALS['env']) && $GLOBALS['env'] == 'production') {
 			$memoryCache = new Memcached();
 			$memoryCache->setOption(Memcached::OPT_DISTRIBUTION, Memcached::DISTRIBUTION_CONSISTENT);
 			$memoryCache->setOption(Memcached::OPT_LIBKETAMA_COMPATIBLE, true);
