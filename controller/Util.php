@@ -22,7 +22,7 @@
  */
 
 require_once('astroboa-php-client/AstroboaClient.php');
-require_once('Smarty' . DIRECTORY_SEPARATOR . 'Smarty.class.php');
+require_once('smarty' . DIRECTORY_SEPARATOR . 'libs' . DIRECTORY_SEPARATOR . 'Smarty.class.php');
 require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'mail' . DIRECTORY_SEPARATOR . 'class.phpmailer.php');
 require_once(dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'social' . DIRECTORY_SEPARATOR . 'facebook.php');
 require_once('php-amqplib/amqp.inc');
