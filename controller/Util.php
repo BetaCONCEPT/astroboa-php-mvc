@@ -46,7 +46,7 @@ class Util {
 	 * @return multitype:|boolean
 	 */
 	public static function getAstroboaConfiguration($fullPathToAstroboaConfigurationFile, $cache) {
-		$astroboaConfiguration = null
+		$astroboaConfiguration = null;
 		
 		if (!empty($cache)) {
 			// The cache key is prefixed with the configuration file path as a Name Space to allow for seperate configuration per site
