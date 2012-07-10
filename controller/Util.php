@@ -137,10 +137,11 @@ class Util {
 	// while getTopic is available in Controller class we have add it as utilitity function since it is usefull in templates to instantly access a topic if the topic name is available
 	public static function getTopic($topicIdOrName, $astroboaConfiguration, $cacheDefaultExpirationInSeconds = null,$depth = 1) {
 		$topic = null;
-		$cashe = self::getMemoryCache()
-		if (!empty($cashe)) {
+		$cache = self::getMemoryCache();
+		
+		if (!empty($cache)) {
 			// first look in cache
-			$topic = $cashe->get($topicIdOrName);
+			$topic = $cache->get($topicIdOrName);
 		}
 		
 		if ($topic == null) {
@@ -150,7 +151,7 @@ class Util {
 			if ($request->ok()) {
 				$topic = $request->getResponseBodyAsArray();
 				
-				if (!empty($cashe)) {
+				if (!empty($cache)) {
 					if ($cacheDefaultExpirationInSeconds == null) {
 							if (!empty($astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC'])) {
 								$cacheDefaultExpirationInSeconds = $astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC'];
@@ -161,7 +162,7 @@ class Util {
 							}
 					}
 				
-					$cashe->set($topicIdOrName, $topic, $cacheDefaultExpirationInSeconds);
+					$cache->set($topicIdOrName, $topic, $cacheDefaultExpirationInSeconds);
 				}
 				
 				return $topic;
