@@ -6,7 +6,7 @@ error_reporting(E_ALL | E_STRICT);
 // The environment can be: "development" or "staging" or "production"
 // It can be used to alter the controller or template behaviour if the app is deployed in different environments
 // IT IS REQUIRED by astroboa-php-mvc library. It is used to disable caching with memcached if the environment is 'staging' or 'development'
-$env = "production";
+$env = "development";
 
 require('astroboa-php-mvc/router/php-router.php');
 
