@@ -46,15 +46,21 @@ class Util {
 	 * @return multitype:|boolean
 	 */
 	public static function getAstroboaConfiguration($fullPathToAstroboaConfigurationFile, $cache) {
-		// The cache key is prefixed with the configuration file path as a Name Space to allow for seperate configuration per site
-		$astroboaConfigurationCacheKey = $fullPathToAstroboaConfigurationFile . ':' . self::CACHE_KEY_ASTROBOA_CONFIGURATION;
-		$astroboaConfiguration = $cache->get($astroboaConfigurationCacheKey);
+		$astroboaConfiguration = null
+		
+		if (!empty($cache)) {
+			// The cache key is prefixed with the configuration file path as a Name Space to allow for seperate configuration per site
+			$astroboaConfigurationCacheKey = $fullPathToAstroboaConfigurationFile . ':' . self::CACHE_KEY_ASTROBOA_CONFIGURATION;
+			$astroboaConfiguration = $cache->get($astroboaConfigurationCacheKey);
+		}
 		
 		if ($astroboaConfiguration == null) {
 			$astroboaConfiguration = parse_ini_file($fullPathToAstroboaConfigurationFile, true);
 			
 			if (is_array($astroboaConfiguration)) {
-				$cache->set($astroboaConfigurationCacheKey, $astroboaConfiguration, self::CACHE_DEFAULT_EXPIRATION_IN_SECONDS_ASTROBOA_CONFIGURATION);
+				if (!empty($cache)) {
+					$cache->set($astroboaConfigurationCacheKey, $astroboaConfiguration, self::CACHE_DEFAULT_EXPIRATION_IN_SECONDS_ASTROBOA_CONFIGURATION);
+				}
 				return $astroboaConfiguration;
 			}
 			else {
@@ -108,10 +114,15 @@ class Util {
 	}
 	
 	public static function getMemoryCache() {
-		$memoryCache = new Memcached();
-		$memoryCache->setOption(Memcached::OPT_DISTRIBUTION, Memcached::DISTRIBUTION_CONSISTENT);
-		$memoryCache->setOption(Memcached::OPT_LIBKETAMA_COMPATIBLE, true);
-		$memoryCache->addServer('localhost', 11211);
+		$memoryCache = null;
+		
+		if (!empty($GLOBALS['env'] && $GLOBALS['env'] == 'production') {
+			$memoryCache = new Memcached();
+			$memoryCache->setOption(Memcached::OPT_DISTRIBUTION, Memcached::DISTRIBUTION_CONSISTENT);
+			$memoryCache->setOption(Memcached::OPT_LIBKETAMA_COMPATIBLE, true);
+			$memoryCache->addServer('localhost', 11211);
+		}
+		
 		return $memoryCache;
 	}
 	
@@ -125,9 +136,12 @@ class Util {
 	
 	// while getTopic is available in Controller class we have add it as utilitity function since it is usefull in templates to instantly access a topic if the topic name is available
 	public static function getTopic($topicIdOrName, $astroboaConfiguration, $cacheDefaultExpirationInSeconds = null,$depth = 1) {
+		$topic = null;
 		
-		// first look in cache
-		$topic = self::getMemoryCache()->get($topicIdOrName);
+		if (!empty(self::getMemoryCache())) {
+			// first look in cache
+			$topic = self::getMemoryCache()->get($topicIdOrName);
+		}
 		
 		if ($topic == null) {
 			// try the repository
@@ -135,17 +149,21 @@ class Util {
 			
 			if ($request->ok()) {
 				$topic = $request->getResponseBodyAsArray();
-				if ($cacheDefaultExpirationInSeconds == null) {
-						if (!empty($astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC'])) {
-							$cacheDefaultExpirationInSeconds = $astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC'];
-						}
-						else {
-							$cacheDefaultExpirationInSeconds = 0;
-							error_log('No cache expiration time was provided and the "CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC" has not been set in configuration file (astroboa.ini). The topic will be cached without expiration');
-						}
+				
+				if (!empty(self::getMemoryCache())) {
+					if ($cacheDefaultExpirationInSeconds == null) {
+							if (!empty($astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC'])) {
+								$cacheDefaultExpirationInSeconds = $astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC'];
+							}
+							else {
+								$cacheDefaultExpirationInSeconds = 0;
+								error_log('No cache expiration time was provided and the "CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC" has not been set in configuration file (astroboa.ini). The topic will be cached without expiration');
+							}
+					}
+				
+					self::getMemoryCache()->set($topicIdOrName, $topic, $cacheDefaultExpirationInSeconds);
 				}
 				
-				self::getMemoryCache()->set($topicIdOrName, $topic, $cacheDefaultExpirationInSeconds);
 				return $topic;
 			}
 			else if ($request->notFound()){

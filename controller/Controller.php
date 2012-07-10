@@ -68,6 +68,9 @@ class Controller {
 		// initialize smarty
 		$this->smarty = Util::initSmarty($this->astroboaConfiguration);
 		
+		// assign globals
+		$this->smarty->assign('globals', $GLOBALS);
+		
 		$this->smarty->assign('facebookLoginUrl', Util::getFacebookLoginUrl($this->astroboaConfiguration));
 		//$this->smarty->assign('linkedinLoginUrl', Util::getLinkedinLoginUrl($this->astroboaConfiguration));
 		
@@ -101,9 +104,12 @@ class Controller {
 	 * @return mixed|NULL
 	 */
 	protected function getObject($objectIdOrName, $cacheDefaultExpirationInSeconds = null, $notifyObjectHasBeenViewed = FALSE) {
+		$object = null;
 		
-		// first look in cache
-		$object = $this->memoryCache->get($objectIdOrName);
+		if (!empty($this->memoryCache)) {
+			// first look in cache
+			$object = $this->memoryCache->get($objectIdOrName);
+		}
 		
 		if ($object == null) {
 			// try the repository
@@ -111,17 +117,20 @@ class Controller {
 			
 			if ($request->ok()) {
 				$object = $request->getResponseBodyAsArray();
-				if ($cacheDefaultExpirationInSeconds == null) {
-						if (!empty($this->astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_OBJECT'])) {
-							$cacheDefaultExpirationInSeconds = $this->astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_OBJECT'];
-						}
-						else {
-							$cacheDefaultExpirationInSeconds = 0;
-							error_log('No cache expiration time was provided and the "CACHE_DEFAULT_EXPIRATION_IN_SECONDS_OBJECT" has not been set in configuration file (astroboa.ini). The object will be cached without expiration');
-						}
-				}
 				
-				$this->memoryCache->set($objectIdOrName, $object, $cacheDefaultExpirationInSeconds);
+				if (!empty($this->memoryCache)) {
+					if ($cacheDefaultExpirationInSeconds == null) {
+							if (!empty($this->astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_OBJECT'])) {
+								$cacheDefaultExpirationInSeconds = $this->astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_OBJECT'];
+							}
+							else {
+								$cacheDefaultExpirationInSeconds = 0;
+								error_log('No cache expiration time was provided and the "CACHE_DEFAULT_EXPIRATION_IN_SECONDS_OBJECT" has not been set in configuration file (astroboa.ini). The object will be cached without expiration');
+							}
+					}
+				
+					$this->memoryCache->set($objectIdOrName, $object, $cacheDefaultExpirationInSeconds);
+				}
 				
 				if ($this->shouldInformThatObjectHasBeenViewed($object,$notifyObjectHasBeenViewed)){
 					$this->objectHasBeenViewed($object['cmsIdentifier']);
@@ -148,9 +157,12 @@ class Controller {
 	}
 	
 	protected function getTopic($topicIdOrName, $cacheDefaultExpirationInSeconds = null) {
+		$topic = null;
 		
-		// first look in cache
-		$topic = $this->memoryCache->get($topicIdOrName);
+		if (!empty($this->memoryCache)) {
+			// first look in cache
+			$topic = $this->memoryCache->get($topicIdOrName);
+		}
 		
 		if ($topic == null) {
 			// try the repository
@@ -158,17 +170,21 @@ class Controller {
 			
 			if ($request->ok()) {
 				$topic = $request->getResponseBodyAsArray();
-				if ($cacheDefaultExpirationInSeconds == null) {
-						if (!empty($this->astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC'])) {
-							$cacheDefaultExpirationInSeconds = $this->astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC'];
-						}
-						else {
-							$cacheDefaultExpirationInSeconds = 0;
-							error_log('No cache expiration time was provided and the "CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC" has not been set in configuration file (astroboa.ini). The topic will be cached without expiration');
-						}
+				
+				if (!empty($this->memoryCache)) {
+					if ($cacheDefaultExpirationInSeconds == null) {
+							if (!empty($this->astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC'])) {
+								$cacheDefaultExpirationInSeconds = $this->astroboaConfiguration['cache']['CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC'];
+							}
+							else {
+								$cacheDefaultExpirationInSeconds = 0;
+								error_log('No cache expiration time was provided and the "CACHE_DEFAULT_EXPIRATION_IN_SECONDS_TOPIC" has not been set in configuration file (astroboa.ini). The topic will be cached without expiration');
+							}
+					}
+				
+					$this->memoryCache->set($topicIdOrName, $topic, $cacheDefaultExpirationInSeconds);
 				}
 				
-				$this->memoryCache->set($topicIdOrName, $topic, $cacheDefaultExpirationInSeconds);
 				return $topic;
 			}
 			else if ($request->notFound()){
