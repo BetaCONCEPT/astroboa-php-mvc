@@ -5,23 +5,76 @@ It is aimed to help you quickly create web applications with PHP and astroboa pu
 It follows a REST architecture as favored by Ruby on Rails and it is very lightweight. 
 It could be compared with Ruby's Sinatra DSL where you put all your routes in a single file, in our case in index.php
 
-To use it you should do the following:
+HOW TO CREATE A NEW PHP PROJECT
+If you use git for your code repository the best way to create a new php project that is based on astroboa-php-mvc is the following: 
+(the example instructions assume that your project will be created under '/Users/myhome/my_php_project', adjust appropriately):
 
-1) Download the astroboa-php-mvc package, unzip it and move the astroboa-php-mvc folder to your PHP include path (e.g. /usr/share/php/astroboa-php-mvc if you installed PHP as a package in Ubuntu or Debian.
-2) Go back to BetaCONCEPT github projects and download the astroboa-php-client package . Unzip it and move the astroboa-php-client to your PHP include path (e.g. /usr/share/php/astroboa-php-client).
-3) We should also download the latest Smarty Template Engine (3.x) and move the 'lib' folder that you will find in the extracted package inside your PHP include path renaming it from 'lib' to Smarty (e.g. /usr/share/php/Smarty).
-4) Go to the folder that you installed astroboa-php-mvc and copy sample-astroboa.ini, sample-index.php and sample.htaccess to the root of your project renaming them to astroboa.ini, index.php and .htaccess respectively.
-5) Crete a folder name 'controller' under the root of your project into which you will put your controllers. Copy from astroboa-php-mvc the sample-NewsController.php into your 'controller' folder and rename it to 'NewsController.php'
-6) Install memcached server and the memcached (not memcache) PHP module
-7) You should have access to an astroboa repository from / to which you will read and write content
+$ mkdir /Users/myhome/my_php_project
+$ cd /Users/myhome/my_php_project
+$ git init
+$ mkdir controller (The 'controller' folder is the folder where you will put your controllers)
+$ mkdir smarty (the 'smarty' folder is where you will put smarty libs and the smarty templates)
+$ mkdir smarty/templates
+$ mkdir smarty/plugins
+$ echo "This is my first astroboa-php-mvc app" > README
+$ git add --all
+$ git commit -m "Initializing my new php app"
 
-That's it.
-You are ready to start.
+We will use git-subtree to add Astroboa php libraries to your PHP project
+
+On MAC OS X
+$ brew install git-subtree
+
+On Linux DEBIAN or UBUNTU
+$ apt-get install git-subtree
+
+Then to add Astroboa libraries as project subtrees 'cd' to the root directory of your project and run the following commands: 
+$ cd /Users/myhome/my_php_project
+$ git-subtree add --prefix=astroboa-php-mvc --squash git@github.com:BetaCONCEPT/astroboa-php-mvc.git master
+$ git-subtree add --prefix=astroboa-php-client --squash git@github.com:BetaCONCEPT/astroboa-php-client.git master
+
+Having Astroboa Libraries as subtrees to your project allows to introduce your own changes to the libraries or periodically merge into your project the latest library code
+To update to the latest library code 'cd' to the root directory of your project and run the following commands:
+$ cd /Users/myhome/my_php_project
+$ git subtree pull --prefix=astroboa-php-mvc --squash git@github.com:BetaCONCEPT/astroboa-php-mvc.git master
+$ git subtree pull --prefix=astroboa-php-client --squash git@github.com:BetaCONCEPT/astroboa-php-client.git master
+
+To add Smarty templating engine to your PHP project: 
+Use 'wget' command to download Smarty to a directory OUTSIDE  of your PHP project, e.g. to /Users/myhome (You may check the smarty web site and replace 'Smarty_3_1_11' with the latest smarty version):
+
+$ cd /Users/myhome
+$ wget http://www.smarty.net/files/Smarty-3.1.11.zip
+
+Then uncompress it and copy the 'libs' directory to the 'smarty' directory inside your PHP project. 
+astroboa-php-mvc is configured to find smarty libs under the path 'smarty/libs' (so this path should be either inside your project or in your PHP include path)
+
+$ unzip /home/myhome/Smarty-3.1.11.zip
+$ cp -r /home/myhome/Smarty-3.1.11/libs /Users/myhome/my_php_project/smarty/
+
+If you do not use git you may directly download 'astroboa-php-mvc' and 'astroboa-php-client' from github, unzip them and
+copy them under your projects root path (e.g. /Users/myhome/my_php_project/astroboa-php-mvc and /Users/myhome/my_php_project/astroboa-php-client respectively).
+
+If you have multiple PHP projects you may choose to install them to your PHP include path (e.g. /usr/share/php/astroboa-php-mvc and /usr/share/php/astroboa-php-client if you installed PHP as a package in Ubuntu or Debian).
+
+After you finished the installation of 'astroboa-php-mvc', 'astroboa-php-client' and 'Smarty' do the following:
+
+$ cd /Users/myhome/my_php_project
+$ cp astroboa-php-mvc/sample-astroboa.ini astroboa.ini
+$ cp astroboa-php-mvc/sample-index.php index.php
+$ cp astroboa-php-mvc/sample.htaccess .htaccess
+
+If you install a production environment you need to install memcached server and the memcached (not memcache) PHP module. 
+The default environment configured in index.php is 'staging' and does not require to have memcached server and PHP module installed. 
+Do not forget to change the environment to 'production' ($env = "production";) in index.php if you want astroboa-php-mvc to use memcached for caching content and configuration information.
+
 Open astroboa.ini and do the required configuration reading the comments for each configuration property. 
-You should at least add the the ip address or domain name of your astroboa server.
-Check also the .htaccess file to see if you want to do any further configuration. The first two rewrite rules protect your ini file and your controllers directory. The next three rewrite rules route all urls that do not correspond to real files or real directories to your index.php where your routes will take control.
+You should at least add the ip address or domain name of your astroboa server.
+Check also the .htaccess file to see if you want to do any further configuration. The first two rewrite rules protect your ini file and your controllers directory. 
+The next three rewrite rules route all urls that do not correspond to real files or real directories to your index.php where your routes will take control.
  
-Open the index.php to see how to write your routing rules for your REST style Web app.  
+Open the index.php to see how to write your routing rules for your REST style Web app.
+Copy from astroboa-php-mvc the sample-NewsController.php into your 'controller' folder and rename it to 'NewsController.php'  
 Open the controller/NewsController.php to understand how to write your controllers.
+You may also check the sample php application under astroboa-php-mvc/sample-site to see a complete example of using astroboa-php-mvc.
 
-Stay tuned for more documentation and an istallation script that will do all the work for you as well as building a template web app.   
+Stay tuned for more documentation and our new 'astroboa-cli' command line tool that will do all the above work for you as well as installing astroboa server locally and building a template web app. 
