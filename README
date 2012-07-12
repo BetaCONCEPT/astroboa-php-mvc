@@ -70,7 +70,7 @@ $ cp astroboa-php-mvc/sample-index.php index.php
 $ cp astroboa-php-mvc/sample.htaccess .htaccess
 
 If you install a production environment you need to install memcached server and the memcached (not memcache) PHP module. 
-The default environment configured in index.php is 'staging' and does not require to have memcached server and PHP module installed. 
+The default environment configured in index.php is 'development' and does not require to have memcached server and PHP module installed. 
 Do not forget to change the environment to 'production' ($env = "production";) in index.php if you want astroboa-php-mvc to use memcached for caching content and configuration information.
 
 Open astroboa.ini and do the required configuration reading the comments for each configuration property. 
