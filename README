@@ -6,14 +6,13 @@ It follows a REST architecture as favored by Ruby on Rails and it is very lightw
 It could be compared with Ruby's Sinatra DSL where you put all your routes in a single file, in our case in index.php
 
 HOW TO CREATE A NEW PHP PROJECT
-If you use git for your code repository the best way to create a new php project that is based on astroboa-php-mvc is the following: 
-(the example instructions assume that your project will be created under '/Users/myhome/my_php_project', adjust appropriately):
+If you use git for your code repository the best way to create a new php project that is based on astroboa-php-mvc is the following: (the example instructions assume that your project will be created under '/Users/myhome/my_php_project', adjust appropriately):
 
 $ mkdir /Users/myhome/my_php_project
 $ cd /Users/myhome/my_php_project
 $ git init
-$ mkdir controller (The 'controller' folder is the folder where you will put your controllers)
-$ mkdir smarty (the 'smarty' folder is where you will put smarty libs and the smarty templates)
+$ mkdir controller # The 'controller' folder is the folder where you will put your controllers
+$ mkdir smarty  # the 'smarty' folder is where you will put smarty libs and the smarty templates
 $ mkdir smarty/templates
 $ mkdir smarty/plugins
 $ echo "This is my first astroboa-php-mvc app" > README
@@ -25,8 +24,15 @@ We will use git-subtree to add Astroboa php libraries to your PHP project
 On MAC OS X
 $ brew install git-subtree
 
-On Linux DEBIAN or UBUNTU
-$ apt-get install git-subtree
+On Linux
+$ git clone https://github.com/apenwarr/git-subtree.git
+$ cd git-subtree
+$ sudo ./install.sh # all this does is copies a file to your git folder, i.e. /usr/lib/git-core
+
+On Windows if you have the full Cygwin installed, you can use make:
+$ git clone https://github.com/apenwarr/git-subtree.git
+$ cd git-subtree
+$ make install  # That will make a 'git subtree' (note: space instead of dash) command available.
 
 Then to add Astroboa libraries as project subtrees 'cd' to the root directory of your project and run the following commands: 
 $ cd /Users/myhome/my_php_project
